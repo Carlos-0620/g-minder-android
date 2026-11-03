@@ -3,6 +3,10 @@ package com.griffith.gminder
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -33,7 +37,34 @@ fun GMinderTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFFB94E20), secondary = Color(0xFF536653), background = Color(0xFFFFF9F4), surface = Color(0xFFFFF9F4)), content = content)
 }
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), SensorEventListener {
+    private lateinit var sensorManager: SensorManager
+    private var lightSensor: Sensor? = null
+    private var lightLevel by mutableStateOf<Float?>(null)
+    private var lightSensorActive by mutableStateOf(false)
+
+    override fun onResume() {
+        super.onResume()
+        lightLevel = null
+        lightSensorActive = lightSensor?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        } ?: false
+    }
+
+    override fun onPause() {
+        sensorManager.unregisterListener(this)
+        lightSensorActive = false
+        super.onPause()
+    }
+
+    override fun onSensorChanged(event: SensorEvent) {
+        if (event.sensor.type == Sensor.TYPE_LIGHT) {
+            lightLevel = event.values[0]
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+
     private var completion by mutableStateOf<Pair<String, Boolean>?>(null)
     private val details = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) result.data?.let {
@@ -43,6 +74,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
         setContent {
             GMinderTheme {
                 var reminders by rememberSaveable(stateSaver = reminderSaver) { mutableStateOf(listOf(
@@ -66,6 +99,7 @@ class MainActivity : ComponentActivity() {
                         "home" -> {
                             Text("A little reminder, in the right place.", style = MaterialTheme.typography.titleMedium)
                             Text("Milestone 1 preview · Sample places and session-only reminders", style = MaterialTheme.typography.bodySmall)
+                            AmbientLightCard(lightLevel, lightSensor != null, lightSensorActive)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(!completedOnly, { completedOnly = false }, { Text("Active") })
                                 FilterChip(completedOnly, { completedOnly = true }, { Text("Completed") })
