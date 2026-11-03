@@ -3,14 +3,9 @@ package com.griffith.gminder
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,38 +28,16 @@ private val reminderSaver = listSaver<List<Reminder>, String>(
 )
 
 @Composable
-fun GMinderTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFFB94E20), secondary = Color(0xFF536653), background = Color(0xFFFFF9F4), surface = Color(0xFFFFF9F4)), content = content)
+fun GMinderTheme(darkTheme: Boolean = false, content: @Composable () -> Unit) {
+    val colors = if (darkTheme) {
+        darkColorScheme(primary = Color(0xFFFFB596), secondary = Color(0xFFB8CDB4), background = Color(0xFF1B1512), surface = Color(0xFF1B1512))
+    } else {
+        lightColorScheme(primary = Color(0xFFB94E20), secondary = Color(0xFF536653), background = Color(0xFFFFF9F4), surface = Color(0xFFFFF9F4))
+    }
+    MaterialTheme(colorScheme = colors, content = content)
 }
 
-class MainActivity : ComponentActivity(), SensorEventListener {
-    private lateinit var sensorManager: SensorManager
-    private var lightSensor: Sensor? = null
-    private var lightLevel by mutableStateOf<Float?>(null)
-    private var lightSensorActive by mutableStateOf(false)
-
-    override fun onResume() {
-        super.onResume()
-        lightLevel = null
-        lightSensorActive = lightSensor?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
-        } ?: false
-    }
-
-    override fun onPause() {
-        sensorManager.unregisterListener(this)
-        lightSensorActive = false
-        super.onPause()
-    }
-
-    override fun onSensorChanged(event: SensorEvent) {
-        if (event.sensor.type == Sensor.TYPE_LIGHT) {
-            lightLevel = event.values[0]
-        }
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
-
+class MainActivity : LightAwareActivity() {
     private var completion by mutableStateOf<Pair<String, Boolean>?>(null)
     private val details = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) result.data?.let {
@@ -74,10 +47,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
         setContent {
-            GMinderTheme {
+            GMinderTheme(darkTheme = useDarkTheme) {
                 var reminders by rememberSaveable(stateSaver = reminderSaver) { mutableStateOf(listOf(
                     Reminder("1", "Return library books", "Bring the two borrowed books.", places[0]),
                     Reminder("2", "Take a walking break", "Enjoy a short walk after class.", places[1]),
@@ -99,7 +70,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                         "home" -> {
                             Text("A little reminder, in the right place.", style = MaterialTheme.typography.titleMedium)
                             Text("Milestone 1 preview · Sample places and session-only reminders", style = MaterialTheme.typography.bodySmall)
-                            AmbientLightCard(lightLevel, lightSensor != null, lightSensorActive)
+                            AmbientLightCard(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(!completedOnly, { completedOnly = false }, { Text("Active") })
                                 FilterChip(completedOnly, { completedOnly = true }, { Text("Completed") })
@@ -172,11 +143,11 @@ fun Page(title: String, back: (() -> Unit)? = null, content: @Composable ColumnS
     }
 }
 
-class ReminderDetailsActivity : ComponentActivity() {
+class ReminderDetailsActivity : LightAwareActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            GMinderTheme {
+            GMinderTheme(darkTheme = useDarkTheme) {
                 var completed by rememberSaveable { mutableStateOf(intent.getBooleanExtra("completed", false)) }
                 val place = intent.getStringExtra("place").orEmpty()
                 Page("Reminder Details", back = { finish() }) {
