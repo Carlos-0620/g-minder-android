@@ -21,7 +21,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 data class Reminder(val id: String, val title: String, val note: String, val place: String, val completed: Boolean = false)
-private val places = listOf("Trinity College Dublin", "St Stephen's Green Dublin", "Dublin Connolly Station")
+private val places = listOf(
+    "Griffith College Dublin",
+    "Roly's Bistro, Ballsbridge, Dublin",
+    "Tesco, Stillorgan, Dublin",
+    "Mister Magpie, Ballsbridge, Dublin"
+)
 private val reminderSaver = listSaver<List<Reminder>, String>(
     save = { items -> items.flatMap { listOf(it.id, it.title, it.note, it.place, it.completed.toString()) } },
     restore = { values -> values.chunked(5).map { Reminder(it[0], it[1], it[2], it[3], it[4].toBoolean()) } }
@@ -50,9 +55,10 @@ class MainActivity : LightAwareActivity() {
         setContent {
             GMinderTheme(darkTheme = useDarkTheme) {
                 var reminders by rememberSaveable(stateSaver = reminderSaver) { mutableStateOf(listOf(
-                    Reminder("1", "Return library books", "Bring the two borrowed books.", places[0]),
-                    Reminder("2", "Take a walking break", "Enjoy a short walk after class.", places[1]),
-                    Reminder("3", "Collect train tickets", "Check the booking reference.", places[2])
+                    Reminder("1", "Return library books", "Bring the borrowed books back to college.", places[0]),
+                    Reminder("2", "Check work rota", "Check my upcoming shifts before leaving work.", places[1]),
+                    Reminder("3", "Buy groceries", "Pick up milk, bread and fruit.", places[2]),
+                    Reminder("4", "Buy coffee beans", "Pick up coffee beans for home.", places[3])
                 )) }
                 var screen by rememberSaveable { mutableStateOf("home") }
                 var title by rememberSaveable { mutableStateOf("") }
