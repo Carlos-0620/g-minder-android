@@ -37,6 +37,8 @@ Turning adaptation off selects the light theme. This changes the app's colour pa
 
 ## Technology and structure
 
+The [Milestone 1 design document](docs/g-minder%20Milestone%201.pdf) explains the scope, screen designs, navigation and implementation choices.
+
 - Kotlin and Jetpack Compose
 - Material 3 interface components
 - Android activity-result APIs and explicit/implicit intents
