@@ -4,3 +4,8 @@
 **/build/
 local.properties
 *.iml
+*.jks
+*.keystore
+keystore.properties
+.DS_Store
+Thumbs.db
