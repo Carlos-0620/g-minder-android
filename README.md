@@ -6,9 +6,13 @@ An Android reminder app built with **Kotlin**, **Jetpack Compose** and **Materia
 
 **Milestone 1 — interface and early functionality.** The app runs on a physical Samsung Android phone. Location selection currently uses predefined sample places; GPS monitoring, arrival detection and reminder notifications are planned.
 
+**Milestone 2 preparation — sensor reliability.** The light-sensor callback now safely ignores missing readings. The theme decision is isolated for automated checks covering invalid readings, threshold boundaries and fluctuating light levels. This is an incremental improvement to the existing sensor feature; location-triggered reminders remain planned.
+
+A new **Settings** screen is available from My Reminders. It provides the saved automatic-theme preference, live sensor status and a short explanation of the switching thresholds. The existing home-screen control stays synchronised with Settings.
+
 ## Features
 
-- Four screens: My Reminders, Create Reminder, Choose Location and Reminder Details.
+- Five screens: My Reminders, Create Reminder, Choose Location, Reminder Details and Settings.
 - Reminder entry with required-field validation and optional notes.
 - Active and Completed filters, with completion updates returned from the details activity.
 - An explicit Android intent that opens reminder details and passes task information.
@@ -52,10 +56,12 @@ app/src/main/
   java/com/griffith/gminder/
     MainActivity.kt          Reminder model, screens, theme and Maps helper
     LightAwareActivity.kt    Shared sensor and adaptive-theme behaviour
+    AmbientLightTheme.kt     Testable light-to-theme thresholds
+    SettingsScreen.kt        Appearance controls and preview information
     AmbientLightCard.kt      Reading display and adaptation switch
 ```
 
-The first three screens use state-based navigation within MainActivity. ReminderDetailsActivity is a separate Android activity. Both inherit the shared light-sensor behaviour.
+The home, creation, location and settings screens use state-based navigation within MainActivity. ReminderDetailsActivity is a separate Android activity. Both activities inherit the shared light-sensor behaviour.
 
 ## Run locally
 
@@ -76,7 +82,9 @@ The debug APK is generated under `app/build/outputs/apk/debug/`.
 
 ## Validation
 
-The project has been built and run on a physical Samsung Android phone. Manual checks confirmed reminder creation, Maps opening and completion updates. The personalised place list and screen navigation have also been checked on the device. An automated test suite has not yet been added.
+The project has been built and run on a physical Samsung Android phone. Manual checks confirmed reminder creation, Maps opening and completion updates. The personalised place list and screen navigation have also been checked on the device. Local unit tests cover the light-to-theme decisions, including invalid readings and hysteresis. These tests do not replace physical sensor and lifecycle checks.
+
+Run the local tests with `./gradlew :app:testDebugUnitTest` (or `.\gradlew.bat :app:testDebugUnitTest` on Windows).
 
 ## Planned development
 
@@ -84,7 +92,7 @@ The project has been built and run on a physical Samsung Android phone. Manual c
 - Permanent reminder storage
 - A local profile and first-launch introduction
 - Optional fingerprint or device-unlock protection
-- A Settings card and hamburger menu for secondary features
+- A navigation menu for secondary features as the app grows
 - Broader accessibility, lifecycle and device testing
 
 These items describe future work and are not presented as current features.

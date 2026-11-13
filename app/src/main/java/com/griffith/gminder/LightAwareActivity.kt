@@ -57,15 +57,10 @@ open class LightAwareActivity : ComponentActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type != Sensor.TYPE_LIGHT) return
-        val lux = event.values[0]
+        val lux = event.values.firstOrNull() ?: return
         if (!lux.isFinite() || lux < 0f) return
         lightLevel = lux
-        // Separate thresholds keep small sensor fluctuations from flickering the theme.
-        val nextDark = when {
-            lux < 30f -> true
-            lux > 80f -> false
-            else -> darkSurroundings
-        }
+        val nextDark = AmbientLightTheme.isDark(lux, darkSurroundings)
         if (nextDark != darkSurroundings) {
             darkSurroundings = nextDark
             getSharedPreferences("appearance", MODE_PRIVATE).edit()

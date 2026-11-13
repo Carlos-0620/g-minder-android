@@ -70,12 +70,13 @@ class MainActivity : LightAwareActivity() {
                     completion?.let { result -> reminders = reminders.map { if (it.id == result.first) it.copy(completed = result.second) else it } }
                 }
                 BackHandler(screen != "home") { screen = if (screen == "location") "create" else "home" }
-                Page(when (screen) { "create" -> "Create Reminder"; "location" -> "Choose Location"; else -> "My Reminders" },
+                Page(when (screen) { "create" -> "Create Reminder"; "location" -> "Choose Location"; "settings" -> "Settings"; else -> "My Reminders" },
                     back = if (screen == "home") null else ({ screen = if (screen == "location") "create" else "home" })) {
                     when (screen) {
                         "home" -> {
                             Text("A little reminder, in the right place.", style = MaterialTheme.typography.titleMedium)
-                            Text("Milestone 1 preview · Sample places and session-only reminders", style = MaterialTheme.typography.bodySmall)
+                            Text("Development preview · Sample places and session-only reminders", style = MaterialTheme.typography.bodySmall)
+                            OutlinedButton(onClick = { screen = "settings" }, modifier = Modifier.fillMaxWidth()) { Text("Settings") }
                             AmbientLightCard(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(!completedOnly, { completedOnly = false }, { Text("Active") })
@@ -101,6 +102,7 @@ class MainActivity : LightAwareActivity() {
                             }
                             Button(onClick = { title = ""; note = ""; place = ""; attempted = false; screen = "create" }, modifier = Modifier.fillMaxWidth()) { Text("+ New reminder") }
                         }
+                        "settings" -> SettingsScreen(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation)
                         "create" -> {
                             Text("What would you like to remember?", style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(title, { title = it.take(100) }, label = { Text("Title *") }, singleLine = true, isError = attempted && title.isBlank(), modifier = Modifier.fillMaxWidth())
