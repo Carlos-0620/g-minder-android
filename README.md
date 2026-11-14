@@ -10,6 +10,8 @@ An Android reminder app built with **Kotlin**, **Jetpack Compose** and **Materia
 
 A new **Settings** screen is available from My Reminders. It provides the saved automatic-theme preference, live sensor status and a short explanation of the switching thresholds. The existing home-screen control stays synchronised with Settings.
 
+The adaptation control now uses a full-width, labelled switch row with a minimum 48 dp height. Users can tap its label or switch, and accessibility services receive a single switch control. Status text distinguishes automatic mode being off, waiting for a reading, an unavailable sensor and unsupported hardware. This applies to both Home and Settings.
+
 ## Features
 
 - Five screens: My Reminders, Create Reminder, Choose Location, Reminder Details and Settings.
