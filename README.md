@@ -14,7 +14,8 @@ The adaptation control now uses a full-width, labelled switch row with a minimum
 
 ## Features
 
-- Five screens: My Reminders, Create Reminder, Choose Location, Reminder Details and Settings.
+- Six screens: Home, My Reminders, Create Reminder, Choose Location, Reminder Details and Settings.
+- Home opens first and shows live active/completed counts, shortcuts to each filtered list, reminder creation, Settings and the ambient-light controls. Counts update when reminders are created or completed.
 - Reminder entry with required-field validation and optional notes.
 - Active and Completed filters, with completion updates returned from the details activity.
 - An explicit Android intent that opens reminder details and passes task information.
@@ -60,10 +61,11 @@ app/src/main/
     LightAwareActivity.kt    Shared sensor and adaptive-theme behaviour
     AmbientLightTheme.kt     Testable light-to-theme thresholds
     SettingsScreen.kt        Appearance controls and preview information
+    HomeScreen.kt            Reminder overview and navigation shortcuts
     AmbientLightCard.kt      Reading display and adaptation switch
 ```
 
-The home, creation, location and settings screens use state-based navigation within MainActivity. ReminderDetailsActivity is a separate Android activity. Both activities inherit the shared light-sensor behaviour.
+Home, My Reminders, creation, location and settings use state-based navigation within MainActivity. Both the on-screen Back button and Android Back return from location selection to the form, from the form to the reminders list, and from the reminders list to Home. ReminderDetailsActivity is a separate Android activity. Both activities inherit the shared light-sensor behaviour.
 
 ## Run locally
 

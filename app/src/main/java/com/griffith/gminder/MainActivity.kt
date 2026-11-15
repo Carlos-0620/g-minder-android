@@ -69,11 +69,31 @@ class MainActivity : LightAwareActivity() {
                 LaunchedEffect(completion) {
                     completion?.let { result -> reminders = reminders.map { if (it.id == result.first) it.copy(completed = result.second) else it } }
                 }
-                BackHandler(screen != "home") { screen = if (screen == "location") "create" else "home" }
-                Page(when (screen) { "create" -> "Create Reminder"; "location" -> "Choose Location"; "settings" -> "Settings"; else -> "My Reminders" },
-                    back = if (screen == "home") null else ({ screen = if (screen == "location") "create" else "home" })) {
+                val goBack = {
+                    screen = when (screen) {
+                        "location" -> "create"
+                        "create" -> "reminders"
+                        else -> "home"
+                    }
+                }
+                val newReminder = {
+                    title = ""; note = ""; place = ""; attempted = false; screen = "create"
+                }
+                BackHandler(screen != "home", onBack = goBack)
+                Page(when (screen) { "home" -> "Home"; "create" -> "Create Reminder"; "location" -> "Choose Location"; "settings" -> "Settings"; else -> "My Reminders" },
+                    back = if (screen == "home") null else goBack) {
                     when (screen) {
                         "home" -> {
+                            HomeScreen(
+                                activeCount = reminders.count { !it.completed },
+                                completedCount = reminders.count { it.completed },
+                                onViewReminders = { completedOnly = it; screen = "reminders" },
+                                onNewReminder = newReminder,
+                                onSettings = { screen = "settings" }
+                            )
+                            AmbientLightCard(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation)
+                        }
+                        "reminders" -> {
                             Text("A little reminder, in the right place.", style = MaterialTheme.typography.titleMedium)
                             Text("Development preview · Sample places and session-only reminders", style = MaterialTheme.typography.bodySmall)
                             OutlinedButton(onClick = { screen = "settings" }, modifier = Modifier.fillMaxWidth()) { Text("Settings") }
@@ -100,7 +120,7 @@ class MainActivity : LightAwareActivity() {
                                     }
                                 }
                             }
-                            Button(onClick = { title = ""; note = ""; place = ""; attempted = false; screen = "create" }, modifier = Modifier.fillMaxWidth()) { Text("+ New reminder") }
+                            Button(onClick = newReminder, modifier = Modifier.fillMaxWidth()) { Text("+ New reminder") }
                         }
                         "settings" -> SettingsScreen(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation)
                         "create" -> {
@@ -114,7 +134,7 @@ class MainActivity : LightAwareActivity() {
                                 attempted = true
                                 if (title.isNotBlank() && place.isNotBlank()) {
                                     reminders = reminders + Reminder(java.util.UUID.randomUUID().toString(), title.trim(), note.trim(), place)
-                                    completedOnly = false; screen = "home"
+                                    completedOnly = false; screen = "reminders"
                                 }
                             }, modifier = Modifier.fillMaxWidth()) { Text("Save reminder") }
                         }
@@ -141,8 +161,9 @@ class MainActivity : LightAwareActivity() {
 
 @Composable
 fun Page(title: String, back: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+    val scrollState = key(title) { rememberScrollState() }
     Surface(Modifier.fillMaxSize()) {
-        Column(Modifier.safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.safeDrawingPadding().imePadding().verticalScroll(scrollState).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("G-MINDER", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
             if (back != null) TextButton(onClick = back) { Text("‹ Back") }
             Text(title, style = MaterialTheme.typography.headlineLarge)
