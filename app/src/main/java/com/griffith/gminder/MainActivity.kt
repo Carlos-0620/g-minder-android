@@ -1,6 +1,7 @@
 package com.griffith.gminder
 
 import android.app.Activity
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
@@ -43,6 +44,23 @@ fun GMinderTheme(darkTheme: Boolean = false, content: @Composable () -> Unit) {
 }
 
 class MainActivity : LightAwareActivity() {
+    private lateinit var locationCapture: CurrentLocationCapture
+    private var locationScreenVisible = false
+    private val locationPermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        if (locationScreenVisible) {
+            if (locationCapture.hasPermission()) locationCapture.start() else locationCapture.permissionDenied()
+        }
+    }
+
+    private fun requestCurrentLocation() {
+        if (locationCapture.hasPermission()) locationCapture.start()
+        else locationPermission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+    }
+
+    override fun onStop() {
+        if (::locationCapture.isInitialized) locationCapture.cancel()
+        super.onStop()
+    }
     private var completion by mutableStateOf<Pair<String, Boolean>?>(null)
     private val details = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) result.data?.let {
@@ -52,6 +70,7 @@ class MainActivity : LightAwareActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        locationCapture = CurrentLocationCapture(this)
         setContent {
             GMinderTheme(darkTheme = useDarkTheme) {
                 var reminders by rememberSaveable(stateSaver = reminderSaver) { mutableStateOf(listOf(
@@ -66,6 +85,10 @@ class MainActivity : LightAwareActivity() {
                 var place by rememberSaveable { mutableStateOf("") }
                 var attempted by rememberSaveable { mutableStateOf(false) }
                 var completedOnly by rememberSaveable { mutableStateOf(false) }
+                DisposableEffect(screen) {
+                    locationScreenVisible = screen == "location"
+                    onDispose { locationScreenVisible = false; locationCapture.cancel() }
+                }
                 LaunchedEffect(completion) {
                     completion?.let { result -> reminders = reminders.map { if (it.id == result.first) it.copy(completed = result.second) else it } }
                 }
@@ -95,7 +118,7 @@ class MainActivity : LightAwareActivity() {
                         }
                         "reminders" -> {
                             Text("A little reminder, in the right place.", style = MaterialTheme.typography.titleMedium)
-                            Text("Development preview · Sample places and session-only reminders", style = MaterialTheme.typography.bodySmall)
+                            Text("Development preview · Sample or captured locations · Session-only reminders", style = MaterialTheme.typography.bodySmall)
                             OutlinedButton(onClick = { screen = "settings" }, modifier = Modifier.fillMaxWidth()) { Text("Settings") }
                             AmbientLightCard(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -127,7 +150,7 @@ class MainActivity : LightAwareActivity() {
                             Text("What would you like to remember?", style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(title, { title = it.take(100) }, label = { Text("Title *") }, singleLine = true, isError = attempted && title.isBlank(), modifier = Modifier.fillMaxWidth())
                             OutlinedTextField(note, { note = it.take(500) }, label = { Text("Notes (optional)") }, minLines = 3, modifier = Modifier.fillMaxWidth())
-                            OutlinedButton(onClick = { screen = "location" }, modifier = Modifier.fillMaxWidth()) { Text(place.ifBlank { "Choose a sample location *" }) }
+                            OutlinedButton(onClick = { screen = "location" }, modifier = Modifier.fillMaxWidth()) { Text(place.ifBlank { "Choose a location *" }) }
                             if (attempted && (title.isBlank() || place.isBlank())) Text("Enter a title and choose a location.", color = MaterialTheme.colorScheme.error)
                             Text("This preview saves reminders for the current session. Location alerts will come in a later milestone.", style = MaterialTheme.typography.bodySmall)
                             Button(onClick = {
@@ -140,11 +163,13 @@ class MainActivity : LightAwareActivity() {
                         }
                         "location" -> {
                             Text("Pick a place", style = MaterialTheme.typography.headlineMedium)
-                            Text("Choose one of the sample locations for your reminder.")
+                            CurrentLocationCard(locationCapture, ::requestCurrentLocation) { place = it }
+                            Text("Selected location: ${place.ifBlank { "None yet" }}")
+                            Text("Or choose a sample place", style = MaterialTheme.typography.titleMedium)
                             places.forEach { candidate ->
-                                Card(onClick = { place = candidate }, modifier = Modifier.fillMaxWidth()) {
+                                Card(onClick = { locationCapture.cancel(); place = candidate }, modifier = Modifier.fillMaxWidth()) {
                                     Row(Modifier.padding(16.dp)) {
-                                        RadioButton(selected = place == candidate, onClick = { place = candidate })
+                                        RadioButton(selected = place == candidate, onClick = { locationCapture.cancel(); place = candidate })
                                         Text(candidate, Modifier.padding(top = 12.dp, start = 8.dp))
                                     }
                                 }

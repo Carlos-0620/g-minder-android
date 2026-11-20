@@ -32,7 +32,7 @@ fun SettingsScreen(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("About this preview", style = MaterialTheme.typography.titleMedium)
             Text("The light sensor changes the app theme, not the phone's screen brightness.")
-            Text("Locations are sample places. GPS monitoring and reminder notifications are not enabled yet.")
+            Text("Choose a sample place or capture your current coordinates while the app is open. Location access is optional. Background monitoring and reminder notifications are not enabled yet.")
             Text("Reminders are kept for the current session. Permanent reminder storage is planned.")
         }
     }

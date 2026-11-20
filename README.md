@@ -4,7 +4,7 @@ An Android reminder app built with **Kotlin**, **Jetpack Compose** and **Materia
 
 ## Current status
 
-**Milestone 1 — interface and early functionality.** The app runs on a physical Samsung Android phone. Location selection currently uses predefined sample places; GPS monitoring, arrival detection and reminder notifications are planned.
+**Milestone 2 — in development.** The Milestone 1 interface is extended with Home, Settings and optional foreground location capture. Background monitoring, arrival detection and reminder notifications are planned.
 
 **Milestone 2 preparation — sensor reliability.** The light-sensor callback now safely ignores missing readings. The theme decision is isolated for automated checks covering invalid readings, threshold boundaries and fluctuating light levels. This is an incremental improvement to the existing sensor feature; location-triggered reminders remain planned.
 
@@ -21,6 +21,7 @@ The adaptation control now uses a full-width, labelled switch row with a minimum
 - An explicit Android intent that opens reminder details and passes task information.
 - An implicit Maps intent that displays a selected place in a compatible installed app.
 - A live ambient-light reading and optional automatic light/dark theme.
+- Optional current-location capture when choosing a reminder's place, with approximate/precise permission support, reported accuracy and Maps preview.
 - Sensor availability checks and foreground lifecycle handling.
 - Saved appearance preferences and small UI-state restoration.
 
@@ -41,6 +42,14 @@ The ambient-light sensor reports illuminance in lux. With **Adapt to surrounding
 - Between those thresholds, it retains the previous theme to reduce flickering.
 
 Turning adaptation off selects the light theme. This changes the app's colour palette, rather than the phone's brightness setting. Devices without a light sensor can still use the reminder screens.
+
+## Current-location capture
+
+From **New reminder → Choose a location**, tap **Use my current location**. Android asks for foreground location permission only when needed; approximate access is supported. A request stops after the first valid reading, after 20 seconds, when cancelled, when leaving the selection screen, or when the app leaves the foreground. Readings older than 30 seconds are ignored.
+
+Review the coordinates and reported accuracy, tap **Select these coordinates**, then **Preview in Maps** or **Use this location**. Saving uses the existing reminder flow; coordinates remain session data. Opening Maps sends the selected place to the chosen maps app. No background location permission, API key, account or new location-service dependency is required.
+
+Physical-device checks still needed for this increment: allow precise access, allow approximate access, deny access, disable phone location services, cancel a request, leave the screen during capture, and save/reopen a reminder with captured coordinates. The new local tests cover coordinate ranges, freshness, accuracy handling and locale-independent Maps formatting; they do not simulate a GPS fix or permission dialogs.
 
 ## Technology and structure
 
@@ -63,6 +72,9 @@ app/src/main/
     SettingsScreen.kt        Appearance controls and preview information
     HomeScreen.kt            Reminder overview and navigation shortcuts
     AmbientLightCard.kt      Reading display and adaptation switch
+    CurrentLocationCapture.kt  Permission checks, fresh location requests and cleanup
+    CurrentLocationCard.kt     Location capture and selection controls
+    LocationFix.kt             Coordinate validation and Maps formatting
 ```
 
 Home, My Reminders, creation, location and settings use state-based navigation within MainActivity. Both the on-screen Back button and Android Back return from location selection to the form, from the form to the reminders list, and from the reminders list to Home. ReminderDetailsActivity is a separate Android activity. Both activities inherit the shared light-sensor behaviour.
@@ -92,7 +104,7 @@ Run the local tests with `./gradlew :app:testDebugUnitTest` (or `.\gradlew.bat :
 
 ## Planned development
 
-- GPS/location selection, geofencing and reminder notifications
+- Background location monitoring, geofencing and reminder notifications
 - Permanent reminder storage
 - A local profile and first-launch introduction
 - Optional fingerprint or device-unlock protection
