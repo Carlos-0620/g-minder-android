@@ -94,6 +94,7 @@ class MainActivity : LightAwareActivity() {
                 }
                 val goBack = {
                     screen = when (screen) {
+                        "map" -> "location"
                         "location" -> "create"
                         "create" -> "reminders"
                         else -> "home"
@@ -103,7 +104,7 @@ class MainActivity : LightAwareActivity() {
                     title = ""; note = ""; place = ""; attempted = false; screen = "create"
                 }
                 BackHandler(screen != "home", onBack = goBack)
-                Page(when (screen) { "home" -> "Home"; "create" -> "Create Reminder"; "location" -> "Choose Location"; "settings" -> "Settings"; else -> "My Reminders" },
+                Page(when (screen) { "home" -> "Home"; "create" -> "Create Reminder"; "location" -> "Choose Location"; "map" -> "Pin on Map"; "settings" -> "Settings"; else -> "My Reminders" },
                     back = if (screen == "home") null else goBack) {
                     when (screen) {
                         "home" -> {
@@ -163,6 +164,7 @@ class MainActivity : LightAwareActivity() {
                         }
                         "location" -> {
                             Text("Pick a place", style = MaterialTheme.typography.headlineMedium)
+                            OutlinedButton(onClick = { screen = "map" }, modifier = Modifier.fillMaxWidth()) { Text("Pin a location on map") }
                             CurrentLocationCard(locationCapture, ::requestCurrentLocation) { place = it }
                             Text("Selected location: ${place.ifBlank { "None yet" }}")
                             Text("Or choose a sample place", style = MaterialTheme.typography.titleMedium)
@@ -176,6 +178,10 @@ class MainActivity : LightAwareActivity() {
                             }
                             OutlinedButton(onClick = { openMaps(place) }, enabled = place.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Preview in Maps") }
                             Button(onClick = { screen = "create" }, enabled = place.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Use this location") }
+                        }
+                        "map" -> MapLocationPicker(LocationFix.fromMapQuery(place) ?: locationCapture.fix) {
+                            place = it
+                            screen = "location"
                         }
                     }
                 }

@@ -10,6 +10,14 @@ class LocationFix private constructor(
     val mapQuery: String get() = String.format(Locale.US, "%.5f, %.5f", latitude, longitude)
 
     companion object {
+        fun fromMapQuery(query: String): LocationFix? {
+            val parts = query.split(',')
+            if (parts.size != 2) return null
+            val latitude = parts[0].trim().toDoubleOrNull() ?: return null
+            val longitude = parts[1].trim().toDoubleOrNull() ?: return null
+            return from(latitude, longitude, null, 0L)
+        }
+
         fun from(latitude: Double, longitude: Double, accuracyMetres: Float?, ageMillis: Long): LocationFix? {
             if (!latitude.isFinite() || latitude !in -90.0..90.0) return null
             if (!longitude.isFinite() || longitude !in -180.0..180.0) return null

@@ -1,0 +1,5 @@
+html, body, #map { height: 100%; width: 100%; margin: 0; }
+body { background: #eee7df; }
+.map-pin { background: none; border: none; }
+.map-pin span { display: block; width: 26px; height: 26px; background: #b94e20; border: 3px solid white; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 2px 6px #4448; }
+.leaflet-control-attribution { font-size: 11px; }

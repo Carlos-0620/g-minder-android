@@ -14,7 +14,7 @@ The adaptation control now uses a full-width, labelled switch row with a minimum
 
 ## Features
 
-- Six screens: Home, My Reminders, Create Reminder, Choose Location, Reminder Details and Settings.
+- Seven screens: Home, My Reminders, Create Reminder, Choose Location, Pin on Map, Reminder Details and Settings.
 - Home opens first and shows live active/completed counts, shortcuts to each filtered list, reminder creation, Settings and the ambient-light controls. Counts update when reminders are created or completed.
 - Reminder entry with required-field validation and optional notes.
 - Active and Completed filters, with completion updates returned from the details activity.
@@ -22,6 +22,7 @@ The adaptation control now uses a full-width, labelled switch row with a minimum
 - An implicit Maps intent that displays a selected place in a compatible installed app.
 - A live ambient-light reading and optional automatic light/dark theme.
 - Optional current-location capture when choosing a reminder's place, with approximate/precise permission support, reported accuracy and Maps preview.
+- An interactive map picker: pan, zoom, tap to drop or move a pin, then confirm its coordinates for the reminder.
 - Sensor availability checks and foreground lifecycle handling.
 - Saved appearance preferences and small UI-state restoration.
 
@@ -51,6 +52,18 @@ Review the coordinates and reported accuracy, tap **Select these coordinates**, 
 
 Physical-device checks still needed for this increment: allow precise access, allow approximate access, deny access, disable phone location services, cancel a request, leave the screen during capture, and save/reopen a reminder with captured coordinates. The new local tests cover coordinate ranges, freshness, accuracy handling and locale-independent Maps formatting; they do not simulate a GPS fix or permission dialogs.
 
+## Map pin selection
+
+Open **Choose a location → Pin a location on map**. Move or zoom the map, tap the desired place and press **Use pinned location**. The choice returns to location selection, where **Use this location** returns it to the reminder form. Back cancels the map choice without replacing the previously selected place. A previous coordinate selection or captured location centres the map; otherwise it starts in Dublin. The initial centre is not automatically selected.
+
+Map selection does not request GPS permission. Map imagery needs internet. The app bundles Leaflet 1.9.4 locally (BSD licence in `app/src/main/assets/map/LEAFLET-LICENSE.txt`) and uses OpenStreetMap's standard tiles with visible attribution, an identifying app User-Agent and normal WebView caching. It does not prefetch or download offline map areas. Tile requests reveal the viewed map area to the tile provider. See [Leaflet](https://leafletjs.com/examples-v1/quick-start/) and the [OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
+
+The map WebView only loads bundled map resources and HTTPS tile images, blocks external navigation inside the view, and validates coordinates received from its JavaScript bridge. The map is destroyed when leaving its screen. This feature selects a reminder destination; arrival alerts are still planned. Handset checks for map rendering, panning, pin movement, offline behaviour and selection restoration remain pending.
+
+`node tools/test-map-picker.cjs` checks the picker script's map-event/Android-bridge contract using a small Leaflet test double. It covers initial selection, moving a single pin, longitude wrapping, tile feedback and selection restoration; it does not render tiles or test WebView itself.
+
+An isolated browser render of the bundled page also loaded real tiles and checked that two map-selection events produced one moved pin and the expected coordinates. This does not replace the pending Android WebView handset tests.
+
 ## Technology and structure
 
 The [Milestone 1 design document](docs/g-minder%20Milestone%201.pdf) explains the scope, screen designs, navigation and implementation choices.
@@ -75,6 +88,8 @@ app/src/main/
     CurrentLocationCapture.kt  Permission checks, fresh location requests and cleanup
     CurrentLocationCard.kt     Location capture and selection controls
     LocationFix.kt             Coordinate validation and Maps formatting
+    MapLocationPicker.kt       Embedded map, pin selection and WebView lifecycle
+  assets/map/                 Bundled Leaflet, picker page and third-party licence
 ```
 
 Home, My Reminders, creation, location and settings use state-based navigation within MainActivity. Both the on-screen Back button and Android Back return from location selection to the form, from the form to the reminders list, and from the reminders list to Home. ReminderDetailsActivity is a separate Android activity. Both activities inherit the shared light-sensor behaviour.

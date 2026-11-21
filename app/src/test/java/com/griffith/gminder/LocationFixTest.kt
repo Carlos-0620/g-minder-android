@@ -8,6 +8,21 @@ import java.util.Locale
 
 class LocationFixTest {
     @Test
+    fun mapQueryRoundTripsWithoutLosingTheChosenPoint() {
+        val point = LocationFix.fromMapQuery(" 53.12345, -6.54321 ")!!
+        assertEquals("53.12345, -6.54321", point.mapQuery)
+        assertEquals(point.latitude, LocationFix.fromMapQuery(point.mapQuery)!!.latitude, 0.000001)
+        assertEquals(point.longitude, LocationFix.fromMapQuery(point.mapQuery)!!.longitude, 0.000001)
+    }
+
+    @Test
+    fun mapQueryRejectsSampleNamesExtraFieldsAndInvalidCoordinates() {
+        for (query in listOf("Griffith College Dublin", "53,-6,10", "NaN,0", "91,0", "0,-181", "", "53,", "<script>,0")) {
+            assertNull(LocationFix.fromMapQuery(query))
+        }
+    }
+
+    @Test
     fun acceptsFreshCoordinatesAndRetainsAccuracy() {
         val fix = LocationFix.from(53.0, -6.0, 25f, 30_000L)!!
         assertEquals(25f, fix.accuracyMetres)
