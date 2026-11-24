@@ -2,13 +2,22 @@ package com.griffith.gminder
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -18,22 +27,33 @@ fun SettingsScreen(
     sensorActive: Boolean,
     adaptToLight: Boolean,
     darkTheme: Boolean,
-    onAdaptChanged: (Boolean) -> Unit
+    onAdaptChanged: (Boolean) -> Unit,
+    reminderRangeMetres: Int,
+    onRangeChanged: (Int) -> Unit
 ) {
-    Text("Appearance", style = MaterialTheme.typography.titleLarge)
     AmbientLightCard(lux, sensorAvailable, sensorActive, adaptToLight, darkTheme, onAdaptChanged)
-    Text(
-        "Automatic mode uses a dark theme below 30 lux and a light theme above 80 lux. " +
-            "Between these levels, the current theme stays unchanged to avoid flickering. " +
-            "Turning automatic mode off selects the light theme. Your choice is saved.",
-        style = MaterialTheme.typography.bodyMedium
-    )
+    var range by rememberSaveable(reminderRangeMetres) { mutableStateOf(reminderRangeMetres) }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("About this preview", style = MaterialTheme.typography.titleMedium)
-            Text("The light sensor changes the app theme, not the phone's screen brightness.")
-            Text("Choose a sample place, drop a pin on the map, or capture your current coordinates. Map tiles need internet; current-position capture needs optional location access. Background monitoring and reminder notifications are not enabled yet.")
-            Text("Reminders are kept for the current session. Permanent reminder storage is planned.")
+            Text("Reminder range", style = MaterialTheme.typography.titleMedium)
+            Text("$range metres", style = MaterialTheme.typography.headlineMedium)
+            Text("Radius around a reminder's location.", style = MaterialTheme.typography.bodySmall)
+            Slider(
+                value = range.toFloat(),
+                onValueChange = { range = ReminderRange.normalise(it.toInt()) },
+                onValueChangeFinished = { onRangeChanged(range) },
+                valueRange = ReminderRange.MIN_METRES.toFloat()..ReminderRange.MAX_METRES.toFloat(),
+                steps = (ReminderRange.MAX_METRES - ReminderRange.MIN_METRES) / ReminderRange.STEP_METRES - 1,
+                modifier = Modifier.fillMaxWidth().semantics {
+                    contentDescription = "Reminder radius"
+                    stateDescription = "$range metres"
+                }
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("100 m", style = MaterialTheme.typography.bodySmall)
+                Text("1 km", style = MaterialTheme.typography.bodySmall)
+            }
+            Text("Range saved for arrival alerts. Automatic alerts are not active yet.", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

@@ -22,7 +22,6 @@ import java.util.Locale
 fun AmbientLightCard(lux: Float?, available: Boolean, active: Boolean, adaptToLight: Boolean, darkTheme: Boolean, onAdaptChanged: (Boolean) -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Surrounding light", style = MaterialTheme.typography.titleMedium)
             Row(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(
                     value = adaptToLight,
@@ -34,37 +33,18 @@ fun AmbientLightCard(lux: Float?, available: Boolean, active: Boolean, adaptToLi
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Adapt to surrounding light")
+                    Text("Automatic theme", style = MaterialTheme.typography.titleMedium)
                     Text(
                         when {
-                            !available -> "Light theme · Sensor not supported"
-                            !adaptToLight -> "Light theme · Automatic mode off"
-                            !active -> "Automatic mode · Sensor unavailable"
-                            lux == null -> "Automatic mode · Waiting for sensor"
-                            else -> "Automatic · ${if (darkTheme) "Dark" else "Light"} theme"
+                            !available -> "Light sensor unavailable"
+                            !active -> "Sensor paused"
+                            lux == null -> "Waiting for light reading"
+                            else -> "${if (darkTheme) "Dark" else "Light"} theme · ${String.format(Locale.getDefault(), "%.0f lx", lux)}"
                         },
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
                 Switch(checked = adaptToLight, onCheckedChange = null, enabled = available)
-            }
-            when {
-                !available -> Text("This phone does not have an ambient light sensor.")
-                !active -> Text("Light sensor is currently unavailable.")
-                lux == null -> Text("Waiting for a light reading…")
-                else -> {
-                    Text(String.format(Locale.getDefault(), "%.1f lx", lux), style = MaterialTheme.typography.headlineMedium)
-                    // Simple display bands for this demonstration, not calibrated lighting advice.
-                    val description = when {
-                        lux < 50f -> "Low light"
-                        lux < 500f -> "Moderate light"
-                        else -> "Bright surroundings"
-                    }
-                    Text(description, color = MaterialTheme.colorScheme.primary)
-                }
-            }
-            if (available && active) {
-                Text("Cover and uncover the phone's light sensor to see the reading change.", style = MaterialTheme.typography.bodySmall)
             }
         }
     }

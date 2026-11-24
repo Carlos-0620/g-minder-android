@@ -33,6 +33,14 @@ private val reminderSaver = listSaver<List<Reminder>, String>(
 )
 
 class MainActivity : LightAwareActivity() {
+    private var reminderRangeMetres by mutableStateOf(ReminderRange.DEFAULT_METRES)
+
+    private fun setReminderRange(metres: Int) {
+        reminderRangeMetres = ReminderRange.normalise(metres)
+        getSharedPreferences("reminder_settings", MODE_PRIVATE).edit()
+            .putInt("radius_metres", reminderRangeMetres).apply()
+    }
+
     private lateinit var locationCapture: CurrentLocationCapture
     private var locationScreenVisible = false
     private val locationPermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -59,6 +67,9 @@ class MainActivity : LightAwareActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        reminderRangeMetres = ReminderRange.normalise(
+            getSharedPreferences("reminder_settings", MODE_PRIVATE).getInt("radius_metres", ReminderRange.DEFAULT_METRES)
+        )
         locationCapture = CurrentLocationCapture(this)
         setContent {
             GMinderTheme(darkTheme = useDarkTheme) {
@@ -131,7 +142,7 @@ class MainActivity : LightAwareActivity() {
                             }
                             Button(onClick = newReminder, modifier = Modifier.fillMaxWidth()) { Text("+ New reminder") }
                         }
-                        "settings" -> SettingsScreen(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation)
+                        "settings" -> SettingsScreen(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation, reminderRangeMetres, ::setReminderRange)
                         "create" -> {
                             Text("What would you like to remember?", style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(title, { title = it.take(100) }, label = { Text("Title *") }, singleLine = true, isError = attempted && title.isBlank(), modifier = Modifier.fillMaxWidth())

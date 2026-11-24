@@ -8,7 +8,7 @@ An Android reminder app built with **Kotlin**, **Jetpack Compose** and **Materia
 
 **Milestone 2 preparation — sensor reliability.** The light-sensor callback now safely ignores missing readings. The theme decision is isolated for automated checks covering invalid readings, threshold boundaries and fluctuating light levels. This is an incremental improvement to the existing sensor feature; location-triggered reminders remain planned.
 
-**Settings** is available from Home and My Reminders. It holds the automatic-theme preference, live sensor status and switching thresholds. Home and My Reminders focus on task navigation and reminder cards; the large sensor card is confined to Settings.
+**Settings** is available from Home and My Reminders. It contains a compact automatic-theme switch with light/theme status, and a reminder-radius slider. Home and My Reminders focus on task navigation and reminder cards.
 
 The adaptation control uses a full-width, labelled switch row with a minimum 48 dp height. Users can tap its label or switch, and accessibility services receive a single switch control. Status text distinguishes automatic mode being off, waiting for a reading, an unavailable sensor and unsupported hardware.
 
@@ -25,6 +25,7 @@ The adaptation control uses a full-width, labelled switch row with a minimum 48 
 - An interactive map picker: pan, zoom, tap to drop or move a pin, then confirm its coordinates for the reminder.
 - Sensor availability checks and foreground lifecycle handling.
 - Saved appearance preferences and small UI-state restoration.
+- A saved global reminder radius from 100 m to 1 km in 100 m steps (default 200 m). This is configuration for future arrival detection; automatic arrival alerts are not implemented yet.
 
 The sample reminders cover college, work, groceries and buying coffee beans. Reminder records are currently held in UI state; permanent storage is not implemented yet.
 
@@ -82,6 +83,7 @@ app/src/main/
     MainActivity.kt          Reminder model, navigation and Maps helper
     Color.kt                 Light and dark colour schemes
     Theme.kt                 Shared theme and readable typography
+    ReminderRange.kt         Radius defaults, limits and step validation
     LightAwareActivity.kt    Shared sensor and adaptive-theme behaviour
     AmbientLightTheme.kt     Testable light-to-theme thresholds
     SettingsScreen.kt        Appearance controls and preview information
@@ -114,6 +116,10 @@ An optional command-line build, with a suitable JDK and Android SDK configured:
 The debug APK is generated under `app/build/outputs/apk/debug/`.
 
 ## Validation
+
+The Settings radius is saved to SharedPreferences when the slider gesture finishes and restored on the next app launch. Unit tests check the supported values, rounding and invalid saved values. The radius describes distance from the selected point, not a circle's circumference. It currently configures future arrival logic and does not trigger a notification.
+
+On the Samsung phone, changing the slider to 700 m and restarting the app restored 700 m correctly. It was then returned to the 200 m default.
 
 Milestone 1 feedback informed the current layout: sensor controls moved into Settings, duplicate introduction text removed from My Reminders, body text standardised to 16 sp with 14 sp supporting text, and colour schemes/theme extracted into separate files. Text remains scalable through Android's font setting. New milestone documentation should prioritise behaviour, navigation and testing over extended colour-choice explanations; the next demo can show only the app screen.
 
