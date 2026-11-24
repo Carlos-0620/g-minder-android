@@ -8,14 +8,14 @@ An Android reminder app built with **Kotlin**, **Jetpack Compose** and **Materia
 
 **Milestone 2 preparation — sensor reliability.** The light-sensor callback now safely ignores missing readings. The theme decision is isolated for automated checks covering invalid readings, threshold boundaries and fluctuating light levels. This is an incremental improvement to the existing sensor feature; location-triggered reminders remain planned.
 
-A new **Settings** screen is available from My Reminders. It provides the saved automatic-theme preference, live sensor status and a short explanation of the switching thresholds. The existing home-screen control stays synchronised with Settings.
+**Settings** is available from Home and My Reminders. It holds the automatic-theme preference, live sensor status and switching thresholds. Home and My Reminders focus on task navigation and reminder cards; the large sensor card is confined to Settings.
 
-The adaptation control now uses a full-width, labelled switch row with a minimum 48 dp height. Users can tap its label or switch, and accessibility services receive a single switch control. Status text distinguishes automatic mode being off, waiting for a reading, an unavailable sensor and unsupported hardware. This applies to both Home and Settings.
+The adaptation control uses a full-width, labelled switch row with a minimum 48 dp height. Users can tap its label or switch, and accessibility services receive a single switch control. Status text distinguishes automatic mode being off, waiting for a reading, an unavailable sensor and unsupported hardware.
 
 ## Features
 
 - Seven screens: Home, My Reminders, Create Reminder, Choose Location, Pin on Map, Reminder Details and Settings.
-- Home opens first and shows live active/completed counts, shortcuts to each filtered list, reminder creation, Settings and the ambient-light controls. Counts update when reminders are created or completed.
+- Home opens first and shows live active/completed counts, shortcuts to each filtered list, reminder creation and Settings. Counts update when reminders are created or completed.
 - Reminder entry with required-field validation and optional notes.
 - Active and Completed filters, with completion updates returned from the details activity.
 - An explicit Android intent that opens reminder details and passes task information.
@@ -58,7 +58,7 @@ Open **Choose a location → Pin a location on map**. Move or zoom the map, tap 
 
 Map selection does not request GPS permission. Map imagery needs internet. The app bundles Leaflet 1.9.4 locally (BSD licence in `app/src/main/assets/map/LEAFLET-LICENSE.txt`) and uses OpenStreetMap's standard tiles with visible attribution, an identifying app User-Agent and normal WebView caching. It does not prefetch or download offline map areas. Tile requests reveal the viewed map area to the tile provider. See [Leaflet](https://leafletjs.com/examples-v1/quick-start/) and the [OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
 
-The map WebView only loads bundled map resources and HTTPS tile images, blocks external navigation inside the view, and validates coordinates received from its JavaScript bridge. The map is destroyed when leaving its screen. This feature selects a reminder destination; arrival alerts are still planned. Handset checks for map rendering, panning, pin movement, offline behaviour and selection restoration remain pending.
+The map WebView only loads bundled map resources and HTTPS tile images, blocks external navigation inside the view, and validates coordinates received from its JavaScript bridge. The map is destroyed when leaving its screen. Explicit viewport sizing fixes a zero-height map observed in Android's scrolling layout. Map rendering and tap-to-pin coordinates have been checked on the Samsung phone. Offline behaviour and rotation restoration still need handset checks. Arrival alerts remain planned.
 
 `node tools/test-map-picker.cjs` checks the picker script's map-event/Android-bridge contract using a small Leaflet test double. It covers initial selection, moving a single pin, longitude wrapping, tile feedback and selection restoration; it does not render tiles or test WebView itself.
 
@@ -79,7 +79,9 @@ The [Milestone 1 design document](docs/g-minder%20Milestone%201.pdf) explains th
 app/src/main/
   AndroidManifest.xml
   java/com/griffith/gminder/
-    MainActivity.kt          Reminder model, screens, theme and Maps helper
+    MainActivity.kt          Reminder model, navigation and Maps helper
+    Color.kt                 Light and dark colour schemes
+    Theme.kt                 Shared theme and readable typography
     LightAwareActivity.kt    Shared sensor and adaptive-theme behaviour
     AmbientLightTheme.kt     Testable light-to-theme thresholds
     SettingsScreen.kt        Appearance controls and preview information
@@ -112,6 +114,8 @@ An optional command-line build, with a suitable JDK and Android SDK configured:
 The debug APK is generated under `app/build/outputs/apk/debug/`.
 
 ## Validation
+
+Milestone 1 feedback informed the current layout: sensor controls moved into Settings, duplicate introduction text removed from My Reminders, body text standardised to 16 sp with 14 sp supporting text, and colour schemes/theme extracted into separate files. Text remains scalable through Android's font setting. New milestone documentation should prioritise behaviour, navigation and testing over extended colour-choice explanations; the next demo can show only the app screen.
 
 The project has been built and run on a physical Samsung Android phone. Manual checks confirmed reminder creation, Maps opening and completion updates. The personalised place list and screen navigation have also been checked on the device. Local unit tests cover the light-to-theme decisions, including invalid readings and hysteresis. These tests do not replace physical sensor and lifecycle checks.
 

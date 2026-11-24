@@ -18,7 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 data class Reminder(val id: String, val title: String, val note: String, val place: String, val completed: Boolean = false)
@@ -32,16 +31,6 @@ private val reminderSaver = listSaver<List<Reminder>, String>(
     save = { items -> items.flatMap { listOf(it.id, it.title, it.note, it.place, it.completed.toString()) } },
     restore = { values -> values.chunked(5).map { Reminder(it[0], it[1], it[2], it[3], it[4].toBoolean()) } }
 )
-
-@Composable
-fun GMinderTheme(darkTheme: Boolean = false, content: @Composable () -> Unit) {
-    val colors = if (darkTheme) {
-        darkColorScheme(primary = Color(0xFFFFB596), secondary = Color(0xFFB8CDB4), background = Color(0xFF1B1512), surface = Color(0xFF1B1512))
-    } else {
-        lightColorScheme(primary = Color(0xFFB94E20), secondary = Color(0xFF536653), background = Color(0xFFFFF9F4), surface = Color(0xFFFFF9F4))
-    }
-    MaterialTheme(colorScheme = colors, content = content)
-}
 
 class MainActivity : LightAwareActivity() {
     private lateinit var locationCapture: CurrentLocationCapture
@@ -115,13 +104,9 @@ class MainActivity : LightAwareActivity() {
                                 onNewReminder = newReminder,
                                 onSettings = { screen = "settings" }
                             )
-                            AmbientLightCard(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation)
                         }
                         "reminders" -> {
-                            Text("A little reminder, in the right place.", style = MaterialTheme.typography.titleMedium)
-                            Text("Development preview · Sample or captured locations · Session-only reminders", style = MaterialTheme.typography.bodySmall)
                             OutlinedButton(onClick = { screen = "settings" }, modifier = Modifier.fillMaxWidth()) { Text("Settings") }
-                            AmbientLightCard(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(!completedOnly, { completedOnly = false }, { Text("Active") })
                                 FilterChip(completedOnly, { completedOnly = true }, { Text("Completed") })
@@ -165,8 +150,12 @@ class MainActivity : LightAwareActivity() {
                         "location" -> {
                             Text("Pick a place", style = MaterialTheme.typography.headlineMedium)
                             OutlinedButton(onClick = { screen = "map" }, modifier = Modifier.fillMaxWidth()) { Text("Pin a location on map") }
-                            CurrentLocationCard(locationCapture, ::requestCurrentLocation) { place = it }
                             Text("Selected location: ${place.ifBlank { "None yet" }}")
+                            if (place.isNotBlank()) {
+                                Button(onClick = { screen = "create" }, modifier = Modifier.fillMaxWidth()) { Text("Use this location") }
+                                OutlinedButton(onClick = { openMaps(place) }, modifier = Modifier.fillMaxWidth()) { Text("Preview in Maps") }
+                            }
+                            CurrentLocationCard(locationCapture, ::requestCurrentLocation) { place = it }
                             Text("Or choose a sample place", style = MaterialTheme.typography.titleMedium)
                             places.forEach { candidate ->
                                 Card(onClick = { locationCapture.cancel(); place = candidate }, modifier = Modifier.fillMaxWidth()) {
@@ -176,8 +165,6 @@ class MainActivity : LightAwareActivity() {
                                     }
                                 }
                             }
-                            OutlinedButton(onClick = { openMaps(place) }, enabled = place.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Preview in Maps") }
-                            Button(onClick = { screen = "create" }, enabled = place.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Use this location") }
                         }
                         "map" -> MapLocationPicker(LocationFix.fromMapQuery(place) ?: locationCapture.fix) {
                             place = it
