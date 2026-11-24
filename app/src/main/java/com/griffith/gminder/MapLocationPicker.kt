@@ -33,6 +33,13 @@ import java.io.ByteArrayInputStream
 import java.util.concurrent.atomic.AtomicBoolean
 
 private class PickerWebView(context: Context) : WebView(context) {
+    override fun onSizeChanged(width: Int, height: Int, oldWidth: Int, oldHeight: Int) {
+        super.onSizeChanged(width, height, oldWidth, oldHeight)
+        if (width > 0 && height > 0) post {
+            evaluateJavascript("window.refreshMapSize && window.refreshMapSize();", null)
+        }
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         parent?.requestDisallowInterceptTouchEvent(event.action != MotionEvent.ACTION_UP && event.action != MotionEvent.ACTION_CANCEL)
         return super.onTouchEvent(event)
@@ -54,8 +61,8 @@ fun MapLocationPicker(initialLocation: LocationFix?, onChoose: (String) -> Unit)
     val alive = remember { AtomicBoolean(true) }
     val handler = remember { Handler(Looper.getMainLooper()) }
     DisposableEffect(Unit) { onDispose { alive.set(false) } }
-    Text("Move or zoom the map, then tap to drop a pin. Tap elsewhere to move it.")
-    Text("Map tiles are supplied by OpenStreetMap. Viewing an area sends tile requests to that service. Picking a point does not need location permission.")
+    Text("Pan or zoom, then tap to drop or move a pin.")
+    Text("Online map by OpenStreetMap. Viewed areas are sent to the map provider; no location permission is needed.", style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
     Text(status)
     AndroidView(
         modifier = Modifier.fillMaxWidth().height(360.dp),
@@ -68,6 +75,9 @@ fun MapLocationPicker(initialLocation: LocationFix?, onChoose: (String) -> Unit)
                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                 settings.userAgentString = "G-Minder/1.0 (+https://github.com/Carlos-0620/g-minder-android)"
                 webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView, url: String) {
+                        view.evaluateJavascript("window.refreshMapSize && window.refreshMapSize();", null)
+                    }
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         if (request.url.toString() == "https://www.openstreetmap.org/copyright") {
                             runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, request.url)) }

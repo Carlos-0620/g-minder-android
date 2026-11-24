@@ -3,6 +3,13 @@ const parameters = new URLSearchParams(window.location.search);
 const latitude = Number(parameters.get('lat'));
 const longitude = Number(parameters.get('lon'));
 const map = L.map('map', { worldCopyJump: true }).setView([latitude, longitude], 14);
+window.refreshMapSize = () => {
+  document.getElementById('map').style.height = Math.max(1, window.innerHeight) + 'px';
+  map.invalidateSize({ pan: false });
+};
+window.addEventListener('resize', window.refreshMapSize);
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(window.refreshMapSize).observe(document.getElementById('map'));
+requestAnimationFrame(window.refreshMapSize);
 map.attributionControl.setPrefix(false);
 const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,

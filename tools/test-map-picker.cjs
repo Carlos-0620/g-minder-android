@@ -12,9 +12,12 @@ function runPicker(search) {
   let markers = 0;
   let moved = null;
   let center = null;
+  let invalidations = 0;
+  const mapElement = { style: {} };
   const map = {
     setView(point) { center = point; return this; },
     on(event, callback) { events[event] = callback; },
+    invalidateSize() { invalidations++; },
     attributionControl: { setPrefix() {} }
   };
   const point = (lat, lng) => ({ lat, lng, wrap() {
@@ -22,7 +25,9 @@ function runPicker(search) {
   } });
   vm.runInNewContext(source, {
     URLSearchParams,
-    window: { location: { search } },
+    window: { location: { search }, innerHeight: 360, addEventListener() {} },
+    document: { getElementById() { return mapElement; } },
+    requestAnimationFrame(callback) { callback(); },
     GMinderMap: {
       select(lat, lng) { selected.push([lat, lng]); },
       tilesAvailable(value) { availability.push(value); }
@@ -39,11 +44,14 @@ function runPicker(search) {
     }
   });
   return { events, tileEvents, selected, availability, point,
-    get markers() { return markers; }, get moved() { return moved; }, get center() { return center; } };
+    get markers() { return markers; }, get moved() { return moved; }, get center() { return center; },
+    get height() { return mapElement.style.height; }, get invalidations() { return invalidations; } };
 }
 
 const picker = runPicker('?lat=53.3498&lon=-6.2603&selected=false');
 assert.deepEqual(Array.from(picker.center), [53.3498, -6.2603]);
+assert.equal(picker.height, '360px', 'Map must get an explicit viewport height inside Android scrolling layouts');
+assert.ok(picker.invalidations > 0, 'Leaflet must refresh after viewport sizing');
 assert.equal(picker.selected.length, 0, 'Initial centre must not select a reminder destination');
 picker.events.click({ latlng: picker.point(53.3, -6.2) });
 picker.events.click({ latlng: picker.point(53.4, 354) });
