@@ -18,7 +18,11 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 data class Reminder(val id: String, val title: String, val note: String, val place: String, val completed: Boolean = false)
 private val places = listOf(
@@ -73,6 +77,17 @@ class MainActivity : LightAwareActivity() {
         locationCapture = CurrentLocationCapture(this)
         setContent {
             GMinderTheme(darkTheme = useDarkTheme) {
+                val profilePreferences = remember { getSharedPreferences("local_profile", MODE_PRIVATE) }
+                var profileName by remember { mutableStateOf(ProfileName.validated(profilePreferences.getString("name", "").orEmpty())) }
+                val saveProfile: (String) -> Unit = { name ->
+                    profilePreferences.edit().putString("name", name).apply()
+                    profileName = name
+                }
+                if (profileName == null) {
+                    WelcomeFlow(onProfileCreated = saveProfile)
+                    return@GMinderTheme
+                }
+                val name = profileName.orEmpty()
                 var reminders by rememberSaveable(stateSaver = reminderSaver) { mutableStateOf(listOf(
                     Reminder("1", "Return library books", "Bring the borrowed books back to college.", places[0]),
                     Reminder("2", "Check work rota", "Check my upcoming shifts before leaving work.", places[1]),
@@ -97,89 +112,104 @@ class MainActivity : LightAwareActivity() {
                         "map" -> "location"
                         "location" -> "create"
                         "create" -> "reminders"
+                        "intro" -> "about"
                         else -> "home"
                     }
                 }
                 val newReminder = {
                     title = ""; note = ""; place = ""; attempted = false; screen = "create"
                 }
-                BackHandler(screen != "home", onBack = goBack)
-                Page(when (screen) { "home" -> "Home"; "create" -> "Create Reminder"; "location" -> "Choose Location"; "map" -> "Pin on Map"; "settings" -> "Settings"; else -> "My Reminders" },
-                    back = if (screen == "home") null else goBack) {
-                    when (screen) {
-                        "home" -> {
-                            HomeScreen(
-                                activeCount = reminders.count { !it.completed },
-                                completedCount = reminders.count { it.completed },
-                                onViewReminders = { completedOnly = it; screen = "reminders" },
-                                onNewReminder = newReminder,
-                                onSettings = { screen = "settings" }
-                            )
-                        }
-                        "reminders" -> {
-                            OutlinedButton(onClick = { screen = "settings" }, modifier = Modifier.fillMaxWidth()) { Text("Settings") }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilterChip(!completedOnly, { completedOnly = false }, { Text("Active") })
-                                FilterChip(completedOnly, { completedOnly = true }, { Text("Completed") })
+                val drawer = rememberDrawerState(DrawerValue.Closed)
+                val scope = rememberCoroutineScope()
+                BackHandler(screen != "home" && !drawer.isOpen, onBack = goBack)
+                BackHandler(drawer.isOpen) { scope.launch { drawer.close() } }
+                ModalNavigationDrawer(
+                    drawerState = drawer,
+                    gesturesEnabled = screen != "map",
+                    drawerContent = { AppDrawer(name, screen) { route -> screen = route; scope.launch { drawer.close() } } }
+                ) {
+                    if (screen == "intro") {
+                        WelcomeFlow(existingName = name, onReturn = { screen = "about" }, onProfileCreated = saveProfile)
+                    } else Page(when (screen) { "home" -> "Home"; "create" -> "Create Reminder"; "location" -> "Choose Location"; "map" -> "Pin on Map"; "settings" -> "Settings"; "profile" -> "My profile"; "about" -> "About G-Minder"; else -> "My Reminders" },
+                        back = if (screen == "home") null else goBack,
+                        onMenu = { scope.launch { drawer.open() } }, showTitle = screen != "home") {
+                        when (screen) {
+                            "home" -> {
+                                HomeScreen(
+                                    name = name,
+                                    activeCount = reminders.count { !it.completed },
+                                    completedCount = reminders.count { it.completed },
+                                    onViewReminders = { completedOnly = it; screen = "reminders" },
+                                    onNewReminder = newReminder,
+                                    onActivity = { suggested -> title = suggested; note = ""; place = ""; attempted = false; screen = "create" }
+                                )
                             }
-                            val visible = reminders.filter { it.completed == completedOnly }
-                            if (visible.isEmpty()) Text(if (completedOnly) "No completed reminders yet." else "You're all caught up.")
-                            visible.forEach { reminder ->
-                                Card(onClick = {
-                                    // Explicit Android intent: open our own details activity.
-                                    details.launch(Intent(this@MainActivity, ReminderDetailsActivity::class.java).apply {
-                                        putExtra("id", reminder.id); putExtra("title", reminder.title)
-                                        putExtra("note", reminder.note); putExtra("place", reminder.place)
-                                        putExtra("completed", reminder.completed)
-                                    })
-                                }, modifier = Modifier.fillMaxWidth()) {
-                                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Text(reminder.title, style = MaterialTheme.typography.titleLarge)
-                                        Text(reminder.place)
-                                        Text(if (reminder.completed) "Completed · View details" else "Active · View details", color = MaterialTheme.colorScheme.primary)
+                            "reminders" -> {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilterChip(!completedOnly, { completedOnly = false }, { Text("Active") })
+                                    FilterChip(completedOnly, { completedOnly = true }, { Text("Completed") })
+                                }
+                                val visible = reminders.filter { it.completed == completedOnly }
+                                if (visible.isEmpty()) Text(if (completedOnly) "No completed reminders yet." else "You're all caught up.")
+                                visible.forEach { reminder ->
+                                    Card(onClick = {
+                                        // Explicit Android intent: open our own details activity.
+                                        details.launch(Intent(this@MainActivity, ReminderDetailsActivity::class.java).apply {
+                                            putExtra("id", reminder.id); putExtra("title", reminder.title)
+                                            putExtra("note", reminder.note); putExtra("place", reminder.place)
+                                            putExtra("completed", reminder.completed)
+                                        })
+                                    }, modifier = Modifier.fillMaxWidth()) {
+                                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Text(reminder.title, style = MaterialTheme.typography.titleLarge)
+                                            Text(reminder.place)
+                                            Text(if (reminder.completed) "Completed · View details" else "Active · View details", color = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                }
+                                Button(onClick = newReminder, modifier = Modifier.fillMaxWidth()) { Text("+ New reminder") }
+                            }
+                            "settings" -> SettingsScreen(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation, reminderRangeMetres, ::setReminderRange)
+                            "profile" -> ProfileForm(name = name, onSave = saveProfile)
+                            "about" -> AboutScreen { screen = "intro" }
+                            "create" -> {
+                                Text("What would you like to remember?", style = MaterialTheme.typography.titleLarge)
+                                OutlinedTextField(title, { title = it.take(100) }, label = { Text("Title *") }, singleLine = true, isError = attempted && title.isBlank(), modifier = Modifier.fillMaxWidth())
+                                OutlinedTextField(note, { note = it.take(500) }, label = { Text("Notes (optional)") }, minLines = 3, modifier = Modifier.fillMaxWidth())
+                                OutlinedButton(onClick = { screen = "location" }, modifier = Modifier.fillMaxWidth()) { Text(place.ifBlank { "Choose a location *" }) }
+                                if (attempted && (title.isBlank() || place.isBlank())) Text("Enter a title and choose a location.", color = MaterialTheme.colorScheme.error)
+                                Text("This preview saves reminders for the current session. Location alerts will come in a later milestone.", style = MaterialTheme.typography.bodySmall)
+                                Button(onClick = {
+                                    attempted = true
+                                    if (title.isNotBlank() && place.isNotBlank()) {
+                                        reminders = reminders + Reminder(java.util.UUID.randomUUID().toString(), title.trim(), note.trim(), place)
+                                        completedOnly = false; screen = "reminders"
+                                    }
+                                }, modifier = Modifier.fillMaxWidth()) { Text("Save reminder") }
+                            }
+                            "location" -> {
+                                Text("Pick a place", style = MaterialTheme.typography.headlineMedium)
+                                OutlinedButton(onClick = { screen = "map" }, modifier = Modifier.fillMaxWidth()) { Text("Pin a location on map") }
+                                Text("Selected location: ${place.ifBlank { "None yet" }}")
+                                if (place.isNotBlank()) {
+                                    Button(onClick = { screen = "create" }, modifier = Modifier.fillMaxWidth()) { Text("Use this location") }
+                                    OutlinedButton(onClick = { openMaps(place) }, modifier = Modifier.fillMaxWidth()) { Text("Preview in Maps") }
+                                }
+                                CurrentLocationCard(locationCapture, ::requestCurrentLocation) { place = it }
+                                Text("Or choose a sample place", style = MaterialTheme.typography.titleMedium)
+                                places.forEach { candidate ->
+                                    Card(onClick = { locationCapture.cancel(); place = candidate }, modifier = Modifier.fillMaxWidth()) {
+                                        Row(Modifier.padding(16.dp)) {
+                                            RadioButton(selected = place == candidate, onClick = { locationCapture.cancel(); place = candidate })
+                                            Text(candidate, Modifier.padding(top = 12.dp, start = 8.dp))
+                                        }
                                     }
                                 }
                             }
-                            Button(onClick = newReminder, modifier = Modifier.fillMaxWidth()) { Text("+ New reminder") }
-                        }
-                        "settings" -> SettingsScreen(lightLevel, hasLightSensor, lightSensorActive, adaptToLight, useDarkTheme, ::setLightAdaptation, reminderRangeMetres, ::setReminderRange)
-                        "create" -> {
-                            Text("What would you like to remember?", style = MaterialTheme.typography.titleLarge)
-                            OutlinedTextField(title, { title = it.take(100) }, label = { Text("Title *") }, singleLine = true, isError = attempted && title.isBlank(), modifier = Modifier.fillMaxWidth())
-                            OutlinedTextField(note, { note = it.take(500) }, label = { Text("Notes (optional)") }, minLines = 3, modifier = Modifier.fillMaxWidth())
-                            OutlinedButton(onClick = { screen = "location" }, modifier = Modifier.fillMaxWidth()) { Text(place.ifBlank { "Choose a location *" }) }
-                            if (attempted && (title.isBlank() || place.isBlank())) Text("Enter a title and choose a location.", color = MaterialTheme.colorScheme.error)
-                            Text("This preview saves reminders for the current session. Location alerts will come in a later milestone.", style = MaterialTheme.typography.bodySmall)
-                            Button(onClick = {
-                                attempted = true
-                                if (title.isNotBlank() && place.isNotBlank()) {
-                                    reminders = reminders + Reminder(java.util.UUID.randomUUID().toString(), title.trim(), note.trim(), place)
-                                    completedOnly = false; screen = "reminders"
-                                }
-                            }, modifier = Modifier.fillMaxWidth()) { Text("Save reminder") }
-                        }
-                        "location" -> {
-                            Text("Pick a place", style = MaterialTheme.typography.headlineMedium)
-                            OutlinedButton(onClick = { screen = "map" }, modifier = Modifier.fillMaxWidth()) { Text("Pin a location on map") }
-                            Text("Selected location: ${place.ifBlank { "None yet" }}")
-                            if (place.isNotBlank()) {
-                                Button(onClick = { screen = "create" }, modifier = Modifier.fillMaxWidth()) { Text("Use this location") }
-                                OutlinedButton(onClick = { openMaps(place) }, modifier = Modifier.fillMaxWidth()) { Text("Preview in Maps") }
+                            "map" -> MapLocationPicker(LocationFix.fromMapQuery(place) ?: locationCapture.fix) {
+                                place = it
+                                screen = "location"
                             }
-                            CurrentLocationCard(locationCapture, ::requestCurrentLocation) { place = it }
-                            Text("Or choose a sample place", style = MaterialTheme.typography.titleMedium)
-                            places.forEach { candidate ->
-                                Card(onClick = { locationCapture.cancel(); place = candidate }, modifier = Modifier.fillMaxWidth()) {
-                                    Row(Modifier.padding(16.dp)) {
-                                        RadioButton(selected = place == candidate, onClick = { locationCapture.cancel(); place = candidate })
-                                        Text(candidate, Modifier.padding(top = 12.dp, start = 8.dp))
-                                    }
-                                }
-                            }
-                        }
-                        "map" -> MapLocationPicker(LocationFix.fromMapQuery(place) ?: locationCapture.fix) {
-                            place = it
-                            screen = "location"
                         }
                     }
                 }
@@ -189,13 +219,19 @@ class MainActivity : LightAwareActivity() {
 }
 
 @Composable
-fun Page(title: String, back: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+fun Page(title: String, back: (() -> Unit)? = null, onMenu: (() -> Unit)? = null, showTitle: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
     val scrollState = key(title) { rememberScrollState() }
     Surface(Modifier.fillMaxSize()) {
         Column(Modifier.safeDrawingPadding().imePadding().verticalScroll(scrollState).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("G-MINDER", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+            if (onMenu != null) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onMenu, modifier = Modifier.semantics { contentDescription = "Open menu" }) { ActivityGlyph(ActivityIcon.Menu) }
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { Text("G-MINDER", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge) }
+                    Spacer(Modifier.width(48.dp))
+                }
+            } else Text("G-MINDER", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
             if (back != null) TextButton(onClick = back) { Text("‹ Back") }
-            Text(title, style = MaterialTheme.typography.headlineLarge)
+            if (showTitle) Text(title, style = MaterialTheme.typography.headlineLarge)
             content()
         }
     }
