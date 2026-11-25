@@ -11,6 +11,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun HomeScreen(
@@ -24,7 +26,7 @@ fun HomeScreen(
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)) {
-                Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) { ActivityGlyph(ActivityIcon.Place, Modifier.size(32.dp)) }
+                Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) { Icon(painterResource(R.drawable.gminder_mark), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(44.dp)) }
             }
             Text("Hello, $name", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
             Text("Your day, a little\nmore organised.", style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)

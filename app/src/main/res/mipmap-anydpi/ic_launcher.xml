@@ -1,0 +1,9 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="@color/gminder_icon_background" android:pathData="M0,0H108V108H0Z" />
+    <group android:pivotX="54" android:pivotY="54" android:scaleX="0.74" android:scaleY="0.74">
+        <path android:fillColor="#B94E20" android:fillType="evenOdd"
+            android:pathData="M54,96C47,86 23,67 23,44C23,3 85,3 85,44C85,67 61,86 54,96Z M36,45L42,39L51,48L68,31L74,37L51,60Z" />
+    </group>
+</vector>

@@ -15,6 +15,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Color
 import androidx.activity.compose.BackHandler
 
 @Composable
@@ -30,7 +32,7 @@ fun WelcomeFlow(existingName: String? = null, onReturn: () -> Unit = {}, onProfi
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(28.dp)
             ) {
                 Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)) {
-                    Box(Modifier.size(96.dp), contentAlignment = Alignment.Center) { ActivityGlyph(ActivityIcon.Place, Modifier.size(44.dp)) }
+                    Box(Modifier.size(96.dp), contentAlignment = Alignment.Center) { Icon(painterResource(R.drawable.gminder_mark), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(64.dp)) }
                 }
                 Text("G-Minder", style = MaterialTheme.typography.headlineLarge)
                 Text("Remember the\nlittle things.", style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)

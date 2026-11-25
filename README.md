@@ -32,6 +32,12 @@ The adaptation control uses a full-width, labelled switch row with a minimum 48 
 
 The sample reminders cover college, work, groceries and buying coffee beans. Reminder records are currently held in UI state; permanent storage is not implemented yet.
 
+## Branding
+
+G-Minder's vector mark combines a location pin with a checkmark. The orange mark is used on light backgrounds and a cream version on dark backgrounds. The welcome and Home screens share the same vector shape. Android launcher resources include a legacy icon, adaptive icon and monochrome layer for supported themed launchers.
+
+Editable SVG files and the light/dark preview are in [`docs/branding`](docs/branding).
+
 ## Screenshots
 
 These are Milestone 1 reference screenshots. The current local Home and menu design has since changed.

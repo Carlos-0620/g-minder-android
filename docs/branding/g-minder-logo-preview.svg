@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480">
+<rect width="480" height="480" fill="#FFF9F4"/><rect x="480" width="480" height="480" fill="#1B1512"/>
+<g transform="translate(105 58) scale(2.5)"><path fill="#B94E20" fill-rule="evenodd" d="M54 96C47 86 23 67 23 44C23 3 85 3 85 44C85 67 61 86 54 96Z M36 45L42 39L51 48L68 31L74 37L51 60Z"/></g>
+<g transform="translate(585 58) scale(2.5)"><path fill="#FFF9F4" fill-rule="evenodd" d="M54 96C47 86 23 67 23 44C23 3 85 3 85 44C85 67 61 86 54 96Z M36 45L42 39L51 48L68 31L74 37L51 60Z"/></g>
+<text x="240" y="374" text-anchor="middle" font-family="Arial,sans-serif" font-size="28" font-weight="600" fill="#1B1512">G-Minder</text>
+<text x="720" y="374" text-anchor="middle" font-family="Arial,sans-serif" font-size="28" font-weight="600" fill="#FFF9F4">G-Minder</text>
+</svg>
