@@ -16,6 +16,7 @@ fun AppDrawer(name: String, screen: String, onNavigate: (String) -> Unit) {
             Text(name, modifier = Modifier.padding(bottom = 24.dp))
             val entries = listOf(
                 Triple("home", "Home", ActivityIcon.Home), Triple("reminders", "My reminders", ActivityIcon.Library),
+                Triple("nearby", "Nearby reminders", ActivityIcon.Place),
                 Triple("profile", "My profile", ActivityIcon.Profile), Triple("settings", "Settings", ActivityIcon.Settings),
                 Triple("about", "About G-Minder", ActivityIcon.About)
             )
@@ -32,7 +33,7 @@ fun AppDrawer(name: String, screen: String, onNavigate: (String) -> Unit) {
 fun AboutScreen(onWelcome: () -> Unit) {
     Text("A little reminder, in the right place.", style = MaterialTheme.typography.titleLarge)
     Text("Create tasks, choose places and keep your day organised.")
-    Text("This preview supports map pins and current-location capture. Automatic arrival alerts and permanent reminder storage are still in development.", style = MaterialTheme.typography.bodySmall)
+    Text("Reminders are saved on this phone. Create map pins and enable Nearby reminders for in-app arrival alerts while G-Minder is open. Background alerts are planned for a later milestone.", style = MaterialTheme.typography.bodySmall)
     Text("Your profile is local to this phone. Online sign-in is planned for Milestone 3.", style = MaterialTheme.typography.bodySmall)
     OutlinedButton(onClick = onWelcome, modifier = Modifier.fillMaxWidth()) { Text("View introduction") }
 }

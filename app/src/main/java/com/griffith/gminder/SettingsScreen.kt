@@ -53,7 +53,7 @@ fun SettingsScreen(
                 Text("100 m", style = MaterialTheme.typography.bodySmall)
                 Text("1 km", style = MaterialTheme.typography.bodySmall)
             }
-            Text("Range saved for arrival alerts. Automatic alerts are not active yet.", style = MaterialTheme.typography.bodySmall)
+            Text("Used by Nearby reminders while the app is open.", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

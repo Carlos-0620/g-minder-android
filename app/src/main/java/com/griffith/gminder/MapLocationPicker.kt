@@ -56,12 +56,20 @@ internal class MapBridge(private val selectPoint: (Double, Double) -> Unit, priv
 fun MapLocationPicker(initialLocation: LocationFix?, onChoose: (String) -> Unit) {
     val context = LocalContext.current
     var selectedQuery by rememberSaveable { mutableStateOf<String?>(null) }
+    var searchedQuery by rememberSaveable { mutableStateOf<String?>(null) }
+    var searchSelection by rememberSaveable { mutableStateOf(0) }
+    var pageReady by remember { mutableStateOf(false) }
     var tilesReady by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Loading map… Internet access is needed for map tiles.") }
     val alive = remember { AtomicBoolean(true) }
     val handler = remember { Handler(Looper.getMainLooper()) }
     DisposableEffect(Unit) { onDispose { alive.set(false) } }
-    Text("Pan or zoom, then tap to drop or move a pin.")
+    PlaceSearch { result ->
+        searchedQuery = result.point.mapQuery
+        searchSelection++
+        selectedQuery = result.point.mapQuery
+    }
+    Text("Search above, or pan and zoom, then tap to drop or move a pin.")
     Text("Online map by OpenStreetMap. Viewed areas are sent to the map provider; no location permission is needed.", style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
     Text(status)
     AndroidView(
@@ -77,6 +85,7 @@ fun MapLocationPicker(initialLocation: LocationFix?, onChoose: (String) -> Unit)
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String) {
                         view.evaluateJavascript("window.refreshMapSize && window.refreshMapSize();", null)
+                        pageReady = true
                     }
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         if (request.url.toString() == "https://www.openstreetmap.org/copyright") {
@@ -100,16 +109,25 @@ fun MapLocationPicker(initialLocation: LocationFix?, onChoose: (String) -> Unit)
                     tilesChanged = { available -> handler.post {
                         if (alive.get()) {
                             tilesReady = available
-                            status = if (available) "Tap the map to choose your reminder location." else "Some map tiles could not load. Check internet access or go back to use coordinates or sample places."
+                            status = if (available) "Tap the map to choose your reminder location." else "Some map tiles could not load. Check internet access or go back to use your current location."
                         }
                     } }
                 ), "GMinderMap")
                 val center = selectedQuery?.let { LocationFix.fromMapQuery(it) } ?: initialLocation ?: LocationFix.from(53.3498, -6.2603, null, 0L)!!
+                tag = searchSelection
                 val url = Uri.parse("file:///android_asset/map/picker.html").buildUpon()
                     .appendQueryParameter("lat", center.latitude.toString())
                     .appendQueryParameter("lon", center.longitude.toString())
                     .appendQueryParameter("selected", (selectedQuery != null).toString()).build()
                 loadUrl(url.toString())
+            }
+        },
+        update = { view ->
+            val query = searchedQuery
+            val point = query?.let(LocationFix::fromMapQuery)
+            if (pageReady && point != null && view.tag != searchSelection) {
+                view.evaluateJavascript("window.selectSearchPin(${point.latitude}, ${point.longitude});", null)
+                view.tag = searchSelection
             }
         },
         onRelease = { it.removeJavascriptInterface("GMinderMap"); it.stopLoading(); it.destroy() }

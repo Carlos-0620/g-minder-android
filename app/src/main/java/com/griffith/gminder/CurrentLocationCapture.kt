@@ -24,12 +24,12 @@ class CurrentLocationCapture(private val activity: Activity) {
         private set
     var fix by mutableStateOf<LocationFix?>(null)
         private set
-    var message by mutableStateOf("Use your phone's location, or choose a sample place below.")
+    var message by mutableStateOf("Capture your phone's current position for this reminder.")
         private set
 
     private val timeout = Runnable {
         cancel()
-        message = "No fresh location received. Try again with a clearer view of the sky, or choose a sample place."
+        message = "No fresh location received. Try again with a clearer view of the sky, or use place search or a map pin."
     }
 
     fun hasPermission(): Boolean = granted(Manifest.permission.ACCESS_COARSE_LOCATION) || granted(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -38,7 +38,7 @@ class CurrentLocationCapture(private val activity: Activity) {
 
     fun permissionDenied() {
         cancel()
-        message = "Location access was not granted. You can still use sample places. If access is blocked, enable it in Android's app settings before retrying."
+        message = "Location access was not granted. You can still search for a place or select a map pin. Enable access in Android's app settings before retrying."
     }
 
     fun start() {
@@ -53,7 +53,7 @@ class CurrentLocationCapture(private val activity: Activity) {
                 runCatching { manager.isProviderEnabled(it) }.getOrDefault(false)
         }
         if (providers.isEmpty()) {
-            message = "No suitable location provider is enabled. Turn on phone location services, or use a sample place."
+            message = "No suitable location provider is enabled. Turn on phone location services, or use place search or a map pin."
             return
         }
         loading = true
@@ -91,7 +91,7 @@ class CurrentLocationCapture(private val activity: Activity) {
         }
         if (registered) handler.postDelayed(timeout, 20_000L) else {
             cancel()
-            message = "Location could not be started. Check permission and phone location services, or use a sample place."
+            message = "Location could not be started. Check permission and phone location services, or use place search or a map pin."
         }
     }
 

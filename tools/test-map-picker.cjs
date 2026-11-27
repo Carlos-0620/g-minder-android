@@ -14,6 +14,7 @@ function runPicker(search) {
   let center = null;
   let invalidations = 0;
   const mapElement = { style: {} };
+  const browserWindow = { location: { search }, innerHeight: 360, addEventListener() {} };
   const map = {
     setView(point) { center = point; return this; },
     on(event, callback) { events[event] = callback; },
@@ -25,7 +26,7 @@ function runPicker(search) {
   } });
   vm.runInNewContext(source, {
     URLSearchParams,
-    window: { location: { search }, innerHeight: 360, addEventListener() {} },
+    window: browserWindow,
     document: { getElementById() { return mapElement; } },
     requestAnimationFrame(callback) { callback(); },
     GMinderMap: {
@@ -43,7 +44,7 @@ function runPicker(search) {
       }
     }
   });
-  return { events, tileEvents, selected, availability, point,
+  return { events, tileEvents, selected, availability, point, searchPin: browserWindow.selectSearchPin,
     get markers() { return markers; }, get moved() { return moved; }, get center() { return center; },
     get height() { return mapElement.style.height; }, get invalidations() { return invalidations; } };
 }
@@ -63,4 +64,15 @@ picker.tileEvents.tileload();
 assert.deepEqual(picker.availability, [false, true]);
 const restored = runPicker('?lat=53.3&lon=-6.2&selected=true');
 assert.equal(restored.selected.length, 1, 'A previously confirmed UI selection must restore its marker');
+picker.searchPin(53.29, -6.19);
+assert.deepEqual(Array.from(picker.center), [53.29, -6.19], 'Search must centre the map on its result');
+assert.ok(Math.abs(picker.selected.at(-1)[1] + 6.19) < 0.000001);
+assert.equal(picker.markers, 1, 'Search must reuse the existing marker');
+const beforeInvalid = picker.selected.length;
+picker.searchPin(NaN, -6);
+picker.searchPin(91, -6);
+picker.searchPin(53, 181);
+assert.equal(picker.selected.length, beforeInvalid, 'Invalid search coordinates must not select a pin');
+picker.events.click({ latlng: picker.point(53.30, -6.20) });
+assert.equal(picker.selected.at(-1)[0], 53.30, 'A searched pin must remain adjustable by tapping');
 console.log('Map picker checks passed: no default selection, moving pin, longitude wrapping, tile feedback and restoration.');

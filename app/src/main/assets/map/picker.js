@@ -30,4 +30,9 @@ function selectPin(point) {
   GMinderMap.select(wrapped.lat, wrapped.lng);
 }
 map.on('click', event => selectPin(event.latlng));
+window.selectSearchPin = (lat, lon) => {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
+  map.setView([lat, lon], 17);
+  selectPin(L.latLng(lat, lon));
+};
 if (parameters.get('selected') === 'true') selectPin(L.latLng(latitude, longitude));
