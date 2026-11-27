@@ -159,6 +159,8 @@ Home, My Reminders, creation, location and settings use state-based navigation w
 
 The project currently compiles and targets API 37. Android Studio's bundled JDK was used for development. Machine-specific SDK paths are excluded from version control.
 
+If a synced folder such as OneDrive locks generated build files on Windows, add `gminder.buildRoot=C\:/Users/YOUR_USER/AppData/Local/G-Minder/build` to the untracked `local.properties` file, then sync Gradle. This relocates generated output only. Without this optional property, Gradle uses its usual project build folders.
+
 An optional command-line build, with a suitable JDK and Android SDK configured:
 
 ```powershell
